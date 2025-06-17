@@ -1,0 +1,306 @@
+{% extends "layout.html" %}
+
+{% block title %}Dashboard - Collaborative Research Platform{% endblock %}
+
+{% block additional_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<!-- Mobile Navigation Toggle -->
+<div class="mobile-toggle d-lg-none">
+    <i class="fas fa-bars"></i>
+</div>
+
+<!-- Sidebar -->
+{% include 'partials/sidebar.html' %}
+
+<!-- Main Content -->
+<div class="main-content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">Dashboard</h1>
+        <div class="d-flex align-items-center">
+            <span class="me-3 text-muted">{{ current_user.role|capitalize }}</span>
+            <a href="{{ url_for('profile') }}" class="text-decoration-none">
+                <img src="{{ url_for('static', filename='uploads/' + current_user.profile_image) if current_user.profile_image != 'default.jpg' else 'https://ui-avatars.com/api/?name=' + current_user.username + '&background=3FA796&color=fff' }}" 
+                     alt="{{ current_user.username }}" class="avatar avatar-md">
+            </a>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Main Column -->
+        <div class="col-lg-8">
+            <!-- Quick Upload Card -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="dashboard-card h-100">
+                        <div class="dashboard-card-body">
+                            {% include 'partials/upload_card.html' %}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="dashboard-card h-100">
+                        <div class="dashboard-card-body">
+                            {% include 'partials/detail_card.html' %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- My Documents -->
+            <div class="dashboard-card">
+                <div class="dashboard-card-header">
+                    <h5>
+                        <i class="fas fa-file-alt me-2"></i>
+                        My Documents
+                    </h5>
+                    <div>
+                        <button class="btn btn-sm btn-outline-secondary me-2 filter-btn active" data-filter="all">All</button>
+                        <button class="btn btn-sm btn-outline-secondary me-2 filter-btn" data-filter="pdf">PDF</button>
+                        <button class="btn btn-sm btn-outline-secondary me-2 filter-btn" data-filter="doc">Word</button>
+                        <button class="btn btn-sm btn-outline-secondary filter-btn" data-filter="other">Other</button>
+                    </div>
+                </div>
+                <div class="dashboard-card-body">
+                    {% if user_documents %}
+                    <ul class="document-list">
+                        {% for document in user_documents %}
+                        <li class="document-item" data-type="{{ 'pdf' if document.file_type == 'pdf' else 'doc' if document.file_type in ['doc', 'docx'] else 'other' }}">
+                            <div class="document-icon">
+                                {% if document.file_type == 'pdf' %}
+                                <i class="far fa-file-pdf"></i>
+                                {% elif document.file_type in ['doc', 'docx'] %}
+                                <i class="far fa-file-word"></i>
+                                {% elif document.file_type in ['xls', 'xlsx'] %}
+                                <i class="far fa-file-excel"></i>
+                                {% elif document.file_type in ['ppt', 'pptx'] %}
+                                <i class="far fa-file-powerpoint"></i>
+                                {% else %}
+                                <i class="far fa-file-alt"></i>
+                                {% endif %}
+                            </div>
+                            <div class="document-info">
+                                <h6 class="document-title">{{ document.title }}</h6>
+                                <div class="document-meta">
+                                    <span>{{ document.file_type.upper() }}</span> • 
+                                    <span>{{ (document.file_size / 1024)|round(1) }} KB</span> • 
+                                    <span>{{ document.uploaded_at.strftime('%d %b %Y') }}</span>
+                                    {% if document.is_public %}
+                                    <span class="badge bg-success ms-2">Public</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary ms-2">Private</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="document-actions">
+                                <a href="{{ url_for('view_document', document_id=document.id) }}" class="document-action" data-bs-toggle="tooltip" title="View">
+                                    <i class="far fa-eye"></i>
+                                </a>
+                                <a href="{{ url_for('download_document', document_id=document.id) }}" class="document-action" data-bs-toggle="tooltip" title="Download">
+                                    <i class="fas fa-download"></i>
+                                </a>
+                                <a href="{{ url_for('edit_document', document_id=document.id) }}" class="document-action" data-bs-toggle="tooltip" title="Edit">
+                                    <i class="far fa-edit"></i>
+                                </a>
+                                <a href="#" class="document-action delete-document" data-bs-toggle="tooltip" title="Delete" data-document-id="{{ document.id }}" data-form-id="delete-form-{{ document.id }}">
+                                    <i class="far fa-trash-alt"></i>
+                                </a>
+                                <form id="delete-form-{{ document.id }}" action="{{ url_for('delete_document', document_id=document.id) }}" method="POST" style="display: none;"></form>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="far fa-file-alt fa-3x mb-3 text-muted"></i>
+                        <h5>No Documents Yet</h5>
+                        <p class="text-muted">You haven't uploaded any documents yet.</p>
+                        <a href="{{ url_for('upload_document') }}" class="btn btn-outline-primary mt-2">
+                            <i class="fas fa-upload me-2"></i> Upload Your First Document
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Shared With Me -->
+            <div class="dashboard-card mt-4">
+                <div class="dashboard-card-header">
+                    <h5>
+                        <i class="fas fa-share-alt me-2"></i>
+                        Shared With Me
+                    </h5>
+                </div>
+                <div class="dashboard-card-body">
+                    {% if shared_documents %}
+                    <ul class="document-list">
+                        {% for document in shared_documents %}
+                        <li class="document-item">
+                            <div class="document-icon">
+                                {% if document.file_type == 'pdf' %}
+                                <i class="far fa-file-pdf"></i>
+                                {% elif document.file_type in ['doc', 'docx'] %}
+                                <i class="far fa-file-word"></i>
+                                {% elif document.file_type in ['xls', 'xlsx'] %}
+                                <i class="far fa-file-excel"></i>
+                                {% elif document.file_type in ['ppt', 'pptx'] %}
+                                <i class="far fa-file-powerpoint"></i>
+                                {% else %}
+                                <i class="far fa-file-alt"></i>
+                                {% endif %}
+                            </div>
+                            <div class="document-info">
+                                <h6 class="document-title">{{ document.title }}</h6>
+                                <div class="document-meta">
+                                    <span>Shared by: {{ document.owner.username }}</span> • 
+                                    <span>{{ document.file_type.upper() }}</span> • 
+                                    <span>{{ document.uploaded_at.strftime('%d %b %Y') }}</span>
+                                </div>
+                            </div>
+                            <div class="document-actions">
+                                <a href="{{ url_for('view_document', document_id=document.id) }}" class="document-action" data-bs-toggle="tooltip" title="View">
+                                    <i class="far fa-eye"></i>
+                                </a>
+                                <a href="{{ url_for('download_document', document_id=document.id) }}" class="document-action" data-bs-toggle="tooltip" title="Download">
+                                    <i class="fas fa-download"></i>
+                                </a>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-share-alt fa-3x mb-3 text-muted"></i>
+                        <h5>No Shared Documents</h5>
+                        <p class="text-muted">No documents have been shared with you yet.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sidebar Column -->
+        <div class="col-lg-4">
+            <!-- Profile Card -->
+            <div class="dashboard-card mb-4">
+                <div class="dashboard-card-body p-0">
+                    {% include 'partials/profile_card.html' %}
+                </div>
+            </div>
+            {% if current_user.role == 'company' %}
+            <!-- Funding Opportunities -->
+            <div class="dashboard-card mb-4">
+                <div class="dashboard-card-header">
+                    <h5>
+                        <i class="fas fa-donate me-2"></i>
+                        Funding Opportunities
+                    </h5>
+                    <a href="{{ url_for('funded_projects') }}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="dashboard-card-body">
+                    {% if funding_eligible_documents %}
+                    <div class="list-group funding-opportunities">
+                        {% for document in funding_eligible_documents %}
+                        <a href="{{ url_for('fund_project', document_id=document.id) }}" class="list-group-item list-group-item-action">
+                            <div class="d-flex align-items-center">
+                                <div class="document-icon me-3">
+                                    {% if document.file_type == 'pdf' %}
+                                    <i class="far fa-file-pdf"></i>
+                                    {% elif document.file_type in ['doc', 'docx'] %}
+                                    <i class="far fa-file-word"></i>
+                                    {% elif document.file_type in ['xls', 'xlsx'] %}
+                                    <i class="far fa-file-excel"></i>
+                                    {% elif document.file_type in ['ppt', 'pptx'] %}
+                                    <i class="far fa-file-powerpoint"></i>
+                                    {% else %}
+                                    <i class="far fa-file-alt"></i>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <h6 class="mb-1">{{ document.title|e }}</h6>
+                                    <p class="mb-0 small text-muted">
+                                        <span>By: {{ document.owner.username }}</span> • 
+                                        <span>{{ document.owner.role|capitalize }}</span> • 
+                                        <span>{{ document.owner.field or document.owner.college }}</span>
+                                    </p>
+                                    <div class="mt-1 d-flex align-items-center">
+                                        <div class="funding-progress me-2" style="width: 100px;">
+                                            {% set received = document.funding_requests.filter_by(status='approved').with_entities(func.sum(Funding.amount)).scalar() or 0 %}
+                                            {% set percentage = (received / document.funding_goal * 100) if document.funding_goal > 0 else 0 %}
+                                            <div class="progress" style="height: 6px;">
+                                                <div class="progress-bar bg-success" role="progressbar" 
+                                                     style="width: {{ percentage }}%;" 
+                                                     aria-valuenow="{{ percentage }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                            </div>
+                                        </div>
+                                        <span class="small">${{ received|round|int }} of ${{ document.funding_goal|round|int }}</span>
+                                    </div>
+                                </div>
+                                <div class="ms-auto">
+                                    <span class="badge bg-primary">Fund</span>
+                                </div>
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-search-dollar fa-3x mb-3 text-muted"></i>
+                        <h5>No Funding Opportunities</h5>
+                        <p class="text-muted">There are no research projects seeking funding at the moment.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Recent Notifications -->
+            <div class="dashboard-card">
+                <div class="dashboard-card-header">
+                    <h5>
+                        <i class="fas fa-bell me-2"></i>
+                        Recent Notifications
+                    </h5>
+                    <a href="{{ url_for('notifications') }}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="dashboard-card-body">
+                    {% if notifications %}
+                    <div class="list-group">
+                        {% for notification in notifications %}
+                        <div class="list-group-item list-group-item-action notification-item unread">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-circle text-primary me-2 small"></i>
+                                        <p class="mb-1">{{ notification.content }}</p>
+                                    </div>
+                                    <p class="notification-time mb-0">{{ notification.created_at.strftime('%B %d, %Y at %H:%M') }}</p>
+                                </div>
+                                <form action="{{ url_for('mark_notification_read', notification_id=notification.id) }}" method="POST">
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="far fa-bell-slash fa-3x mb-3 text-muted"></i>
+                        <h5>No Notifications</h5>
+                        <p class="text-muted">You're all caught up!</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block additional_js %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

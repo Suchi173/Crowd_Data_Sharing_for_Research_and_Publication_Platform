@@ -1,0 +1,26 @@
+# Flask and extensions
+flask==2.3.3
+flask-login==0.6.2
+flask-migrate==4.0.5
+flask-sqlalchemy==3.1.1
+flask-wtf==1.2.1
+gunicorn==23.0.0
+
+# Database
+pymysql==1.1.0  # For MySQL connection
+SQLAlchemy==2.0.23
+alembic==1.12.1
+cryptography==41.0.5  # Required for PyMySQL to work with passwords
+
+# Forms and validation
+email-validator==2.1.0.post1
+WTForms==3.1.1
+
+# File handling and utilities
+pillow==10.1.0
+python-dotenv==1.0.0
+werkzeug==2.3.7
+
+# Date and time handling
+python-dateutil==2.8.2
+pytz==2023.3.post1

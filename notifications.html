@@ -1,0 +1,163 @@
+{% extends "layout.html" %}
+
+{% block title %}Notifications - Collaborative Research Platform{% endblock %}
+
+{% block additional_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<!-- Mobile Navigation Toggle -->
+<div class="mobile-toggle d-lg-none">
+    <i class="fas fa-bars"></i>
+</div>
+
+<!-- Sidebar -->
+{% include 'partials/sidebar.html' %}
+
+<!-- Main Content -->
+<div class="main-content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">Notifications</h1>
+        <div class="d-flex align-items-center">
+            <span class="me-3 text-muted">{{ current_user.role|capitalize }}</span>
+            <a href="{{ url_for('profile') }}" class="text-decoration-none">
+                <img src="{{ url_for('static', filename='uploads/' + current_user.profile_image) if current_user.profile_image != 'default.jpg' else 'https://ui-avatars.com/api/?name=' + current_user.username + '&background=3FA796&color=fff' }}" 
+                     alt="{{ current_user.username }}" class="avatar avatar-md">
+            </a>
+        </div>
+    </div>
+    
+    <div class="dashboard-card">
+        <div class="dashboard-card-header">
+            <h5>
+                <i class="fas fa-bell me-2"></i>
+                Notifications
+                {% if unread_notifications %}
+                <span class="badge bg-danger ms-2">{{ unread_notifications|length }}</span>
+                {% endif %}
+            </h5>
+            
+            {% if unread_notifications %}
+            <form action="{{ url_for('mark_all_notifications_read') }}" method="POST">
+                <button type="submit" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-check-double me-1"></i> Mark All as Read
+                </button>
+            </form>
+            {% endif %}
+        </div>
+        
+        <div class="dashboard-card-body">
+            <ul class="nav nav-tabs mb-4">
+                <li class="nav-item">
+                    <a class="nav-link active" href="#unread" data-bs-toggle="tab">Unread</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#read" data-bs-toggle="tab">Read</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#all" data-bs-toggle="tab">All</a>
+                </li>
+            </ul>
+            
+            <div class="tab-content">
+                <!-- Unread Notifications -->
+                <div class="tab-pane fade show active" id="unread">
+                    {% if unread_notifications %}
+                    <div class="list-group">
+                        {% for notification in unread_notifications %}
+                        <div class="list-group-item list-group-item-action notification-item unread">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-circle text-primary me-2 small"></i>
+                                        <p class="mb-1">{{ notification.content }}</p>
+                                    </div>
+                                    <p class="notification-time mb-0">{{ notification.created_at.strftime('%B %d, %Y at %H:%M') }}</p>
+                                </div>
+                                <form action="{{ url_for('mark_notification_read', notification_id=notification.id) }}" method="POST">
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="far fa-bell-slash fa-3x mb-3 text-muted"></i>
+                        <h5>No unread notifications</h5>
+                        <p class="text-muted">You're all caught up!</p>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Read Notifications -->
+                <div class="tab-pane fade" id="read">
+                    {% if read_notifications %}
+                    <div class="list-group">
+                        {% for notification in read_notifications %}
+                        <div class="list-group-item list-group-item-action notification-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <p class="mb-1">{{ notification.content }}</p>
+                                    <p class="notification-time mb-0">{{ notification.created_at.strftime('%B %d, %Y at %H:%M') }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="far fa-bell fa-3x mb-3 text-muted"></i>
+                        <h5>No read notifications</h5>
+                        <p class="text-muted">You haven't read any notifications yet.</p>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- All Notifications -->
+                <div class="tab-pane fade" id="all">
+                    {% if unread_notifications or read_notifications %}
+                    <div class="list-group">
+                        {% for notification in (unread_notifications + read_notifications)|sort(attribute='created_at', reverse=True) %}
+                        <div class="list-group-item list-group-item-action notification-item {{ 'unread' if not notification.is_read else '' }}">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="d-flex align-items-center">
+                                        {% if not notification.is_read %}
+                                        <i class="fas fa-circle text-primary me-2 small"></i>
+                                        {% endif %}
+                                        <p class="mb-1">{{ notification.content }}</p>
+                                    </div>
+                                    <p class="notification-time mb-0">{{ notification.created_at.strftime('%B %d, %Y at %H:%M') }}</p>
+                                </div>
+                                {% if not notification.is_read %}
+                                <form action="{{ url_for('mark_notification_read', notification_id=notification.id) }}" method="POST">
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="far fa-bell-slash fa-3x mb-3 text-muted"></i>
+                        <h5>No notifications</h5>
+                        <p class="text-muted">You don't have any notifications yet.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block additional_js %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

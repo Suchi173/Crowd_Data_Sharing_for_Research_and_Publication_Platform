@@ -1,0 +1,56 @@
+<div class="text-center mb-4">
+    <img src="https://ui-avatars.com/api/?name=Research&background=3FA796&color=fff&size=80" alt="Document icon" class="rounded-circle bg-light p-2 mb-3" width="80" height="80">
+    <h5>Research Details</h5>
+    <p class="text-muted small">Document metadata and collaborator information</p>
+</div>
+
+<div class="mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <span class="d-flex align-items-center">
+            <i class="fas fa-file-alt me-2 text-primary"></i>
+            <span>Document Count</span>
+        </span>
+        <span class="badge bg-primary rounded-pill">{{ current_user.documents.count() }}</span>
+    </div>
+    
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <span class="d-flex align-items-center">
+            <i class="fas fa-users me-2 text-primary"></i>
+            <span>Collaborations</span>
+        </span>
+        <span class="badge bg-primary rounded-pill">{{ current_user.collaborations.count() }}</span>
+    </div>
+    
+    <div class="d-flex justify-content-between align-items-center">
+        <span class="d-flex align-items-center">
+            <i class="fas fa-bell me-2 text-primary"></i>
+            <span>Unread Notifications</span>
+        </span>
+        <span class="badge bg-{{ 'danger' if current_user.notifications.filter_by(is_read=False).count() > 0 else 'secondary' }} rounded-pill">
+            {{ current_user.notifications.filter_by(is_read=False).count() }}
+        </span>
+    </div>
+</div>
+
+<div class="border-top pt-3">
+    <h6 class="mb-3">Recent Activity</h6>
+    
+    {% set recent_documents = current_user.documents.order_by(Document.uploaded_at.desc()).limit(2).all() %}
+        {% if recent_documents %}
+        {% for doc in recent_documents %}
+        <div class="d-flex align-items-start mb-3">
+            <div class="me-3 text-primary">
+                <i class="far fa-file-alt fa-fw"></i>
+            </div>
+            <div>
+                <p class="mb-1 small"><strong>You</strong> uploaded <strong>{{ doc.title }}</strong></p>
+                <p class="text-muted small mb-0">{{ doc.uploaded_at.strftime('%d %b %Y, %H:%M') }}</p>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="text-center text-muted small">
+            <p>No recent activity to display</p>
+        </div>
+    {% endif %}
+</div>

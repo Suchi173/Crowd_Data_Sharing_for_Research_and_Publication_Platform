@@ -1,0 +1,199 @@
+{% extends "layout.html" %}
+{% block title %}My Project Funding - Collaborative Research Platform{% endblock %}
+{% block additional_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<!-- Mobile Navigation Toggle -->
+<div class="mobile-toggle d-lg-none">
+    <i class="fas fa-bars"></i>
+</div>
+<!-- Sidebar -->
+{% include 'partials/sidebar.html' %}
+<!-- Main Content -->
+<div class="main-content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">My Project Funding</h1>
+        <div class="d-flex align-items-center">
+            <span class="me-3 text-muted">{{ current_user.role|capitalize }}</span>
+            <a href="{{ url_for('profile') }}" class="text-decoration-none">
+                <img src="{{ url_for('static', filename='uploads/' + current_user.profile_image) if current_user.profile_image != 'default.jpg' else 'https://ui-avatars.com/api/?name=' + current_user.username + '&background=3FA796&color=fff' }}" 
+                     alt="{{ current_user.username }}" class="avatar avatar-md">
+            </a>
+        </div>
+    </div>
+    
+    <div class="dashboard-card">
+        <div class="dashboard-card-header">
+            <h5><i class="fas fa-chart-line me-2"></i> Funding Overview</h5>
+        </div>
+        <div class="dashboard-card-body">
+            {% if document_funding and document_funding|length > 0 %}
+            <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4 mb-4">
+                {% set total_funding = {'value': 0} %}
+                {% set total_funders = {'value': 0} %}
+                {% set funded_projects = {'value': 0} %}
+                
+                {% for document, funding_list in document_funding.items() %}
+                    {% if funding_list %}
+                        {% set approved_funding = 0 %}
+                        {% for funding in funding_list %}
+                            {% if funding.status == 'approved' %}
+                                {% set approved_funding = approved_funding + funding.amount %}
+                                {% set total_funding.value = total_funding.value + funding.amount %}
+                                {% set total_funders.value = total_funders.value + 1 %}
+                            {% endif %}
+                        {% endfor %}
+                        {% if approved_funding > 0 %}
+                            {% set funded_projects.value = funded_projects.value + 1 %}
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+                
+                <!-- Total Funding Stats -->
+                <div class="col">
+                    <div class="card bg-primary text-white h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">Total Funding</h6>
+                                    <h3 class="mb-0">${{ total_funding.value|default(0)|round|int }}</h3>
+                                </div>
+                                <div class="stat-icon">
+                                    <i class="fas fa-dollar-sign fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-transparent border-top-0 text-white-50">
+                            <i class="fas fa-info-circle me-1"></i> Total approved funding across all projects
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Funded Projects Stats -->
+                <div class="col">
+                    <div class="card bg-success text-white h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">Funded Projects</h6>
+                                    <h3 class="mb-0">{{ funded_projects.value }}</h3>
+                                </div>
+                                <div class="stat-icon">
+                                    <i class="fas fa-file-invoice-dollar fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-transparent border-top-0 text-white-50">
+                            <i class="fas fa-info-circle me-1"></i> Number of projects receiving funding
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Funders Stats -->
+                <div class="col">
+                    <div class="card bg-info text-white h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">Total Funders</h6>
+                                    <h3 class="mb-0">{{ total_funders.value }}</h3>
+                                </div>
+                                <div class="stat-icon">
+                                    <i class="fas fa-building fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-transparent border-top-0 text-white-50">
+                            <i class="fas fa-info-circle me-1"></i> Number of companies providing funding
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+             <!-- Projects List -->
+             <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Project</th>
+                            <th>Funding Goal</th>
+                            <th>Current Funding</th>
+                            <th>Progress</th>
+                            <th>Funders</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for document, funding_list in document_funding.items() %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="document-icon me-2">
+                                        {% if document.file_type == 'pdf' %}
+                                        <i class="far fa-file-pdf"></i>
+                                        {% elif document.file_type in ['doc', 'docx'] %}
+                                        <i class="far fa-file-word"></i>
+                                        {% elif document.file_type in ['xls', 'xlsx'] %}
+                                        <i class="far fa-file-excel"></i>
+                                        {% elif document.file_type in ['ppt', 'pptx'] %}
+                                        <i class="far fa-file-powerpoint"></i>
+                                        {% else %}
+                                        <i class="far fa-file-alt"></i>
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold">{{ document.title|default('Untitled')|e }}</div>
+                                        <div class="small text-muted">{{ document.file_type|default('UNKNOWN')|upper }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="fw-bold">${{ document.funding_goal|default(0)|round|int }}</div>
+                            </td>
+                            <td>
+                                {% set current_funding = 0 %}
+                                {% for funding in funding_list %}
+                                    {% if funding.status == 'approved' %}
+                                        {% set current_funding = current_funding + funding.amount %}
+                                    {% endif %}
+                                {% endfor %}
+                                <div class="fw-bold">${{ current_funding|round|int }}</div>
+                            </td>
+                            <td>
+                                {% set percentage = (current_funding / document.funding_goal * 100) if document.funding_goal and document.funding_goal > 0 else 0 %}
+                                <div class="d-flex align-items-center">
+                                    <div class="progress me-2" style="height: 8px; width: 100px;">
+                                        <div class="progress-bar bg-success" role="progressbar" 
+                                             style="width: {{ percentage }}%;" 
+                                             aria-valuenow="{{ percentage }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                    <span>{{ percentage|round|int }}%</span>
+                                </div>
+                            </td>
+                            <td>
+                                {% set approved_funders = 0 %}
+                                {% for funding in funding_list %}
+                                    {% if funding.status == 'approved' %}
+                                        {% set approved_funders = approved_funders + 1 %}
+                                    {% endif %}
+                                {% endfor %}
+                                <div>
+                                    {{ approved_funders }} funder{{ 's' if approved_funders != 1 else '' }}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+                <div class="alert alert-info">
+                    You don't have any documents with funding enabled yet. 
+                    To enable funding for your research projects, please edit a document and check the "Enable funding" option.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

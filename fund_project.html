@@ -1,0 +1,176 @@
+{% extends "layout.html" %}
+
+{% block title %}Fund Project - {{ document.title|e }} - Collaborative Research Platform{% endblock %}
+{% block additional_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<!-- Mobile Navigation Toggle -->
+<div class="mobile-toggle d-lg-none">
+    <i class="fas fa-bars"></i>
+</div>
+<!-- Sidebar -->
+{% include 'partials/sidebar.html' %}
+<!-- Main Content -->
+<div class="main-content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <a href="{{ url_for('dashboard') }}" class="text-decoration-none mb-2 d-inline-block">
+                <i class="fas fa-arrow-left me-2"></i> Back to Dashboard
+            </a>
+            <h1 class="mb-0">Fund Research Project</h1>
+        </div>
+        <div class="d-flex align-items-center">
+            <span class="me-3 text-muted">{{ current_user.role|capitalize }}</span>
+            <a href="{{ url_for('profile') }}" class="text-decoration-none">
+                <img src="{{ url_for('static', filename='uploads/' + current_user.profile_image) if current_user.profile_image != 'default.jpg' else 'https://ui-avatars.com/api/?name=' + current_user.username + '&background=3FA796&color=fff' }}" 
+                     alt="{{ current_user.username }}" class="avatar avatar-md">
+            </a>
+        </div>
+    </div>
+    
+    <div class="row">
+          <!-- Funding Form -->
+          <div class="col-lg-8">
+            <div class="dashboard-card">
+                <div class="dashboard-card-header">
+                    <h5>Provide Funding</h5>
+                </div>
+                <div class="dashboard-card-body">
+                    
+                    <form method="POST" action="{{ url_for('fund_project', document_id=document.id) }}">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-4">
+                            <label for="amount" class="form-label">Funding Amount (USD)</label>
+                            {{ form.amount(class="form-control", placeholder="Enter amount") }}
+                            {% if form.amount.errors %}
+                            <div class="text-danger small mt-1">
+                                    {% for error in form.amount.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="text-muted small mt-1">
+                                Enter the amount you would like to contribute to this research project.
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="message" class="form-label">Message to Project Owner (Optional)</label>
+                            {{ form.message(class="form-control", rows="4", placeholder="Enter a message for the project owner") }}
+                            <div class="text-muted small mt-1">
+                                Provide any additional information or questions for the project owner.
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('view_document', document_id=document.id) }}" class="btn btn-outline-secondary">
+                                Cancel
+                            </a>
+                            {{ form.submit(class="btn btn-primary") }}
+                        </div>
+                    </form>
+                </div>
+                
+                <!-- Stripe Payment Integration Section -->
+                <div class="dashboard-card-body border-top pt-4">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <span>Once your funding request is approved, we'll send you payment instructions via secure checkout.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Project Info -->
+        <div class="col-lg-4">
+            <div class="dashboard-card">
+                <div class="dashboard-card-header">
+                    <h5>Project Details</h5>
+                </div>
+                <div class="dashboard-card-body">
+                    <!-- Document icon -->
+                    <div class="text-center mb-4">
+                        <div class="document-icon-large mx-auto" style="width: 80px; height: 80px; font-size: 2.5rem;">
+                            {% if document.file_type == 'pdf' %}
+                            <i class="far fa-file-pdf"></i>
+                            {% elif document.file_type in ['doc', 'docx'] %}
+                            <i class="far fa-file-word"></i>
+                            {% elif document.file_type in ['xls', 'xlsx'] %}
+                            <i class="far fa-file-excel"></i>
+                            {% elif document.file_type in ['ppt', 'pptx'] %}
+                            <i class="far fa-file-powerpoint"></i>
+                            {% else %}
+                            <i class="far fa-file-alt"></i>
+                            {% endif %}
+                        </div>
+                        <h6 class="mb-0 mt-2">{{ document.title|e }}</h6>
+                    </div>
+                    
+                    <!-- Project details -->
+                    <div class="mb-4">
+                        <h6 class="mb-2">Project Owner</h6>
+                        <div class="d-flex align-items-center mb-3">
+                            <img src="{{ url_for('static', filename='uploads/' + owner.profile_image) if owner.profile_image != 'default.jpg' else 'https://ui-avatars.com/api/?name=' + owner.username + '&background=3FA796&color=fff' }}" 
+                                 alt="{{ owner.username }}" class="avatar avatar-sm me-3">
+                            <div>
+                                <div class="fw-bold">{{ owner.username }}</div>
+                                <div class="small text-muted">{{ owner.role|capitalize }}</div>
+                            </div>
+                        </div>
+                        <h6 class="mb-2">Project Summary</h6>
+                        <p class="text-muted small">{{ document.description|e|truncate(150) }}</p>
+                        
+                        <h6 class="mb-2">Funding Status</h6>
+                        {% set received = 0 %}
+                        {% set percentage = 0 %}
+                        {% if document.funding_goal and document.funding_goal > 0 %}
+                            {% set percentage = (received / document.funding_goal * 100) %}
+                        {% endif %}
+                        <div class="funding-progress mb-2">
+                            <div class="progress" style="height: 8px;">
+                                <div class="progress-bar bg-success" role="progressbar" 
+                                     style="width: {{ percentage }}%;" 
+                                     aria-valuenow="{{ percentage }}" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between small">
+                            <span>${{ received|round|int }} raised</span>
+                            <span>${{ document.funding_goal|round|int }} goal</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Document info -->
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item px-0 d-flex justify-content-between">
+                            <span class="text-muted">Institution</span>
+                            <span>{{ owner.college if owner.college else owner.company_name }}</span>
+                        </li>
+                        {% if owner.field %}
+                        <li class="list-group-item px-0 d-flex justify-content-between">
+                            <span class="text-muted">Field of Research</span>
+                            <span>{{ owner.field }}</span>
+                        </li>
+                        {% endif %}
+                        <li class="list-group-item px-0 d-flex justify-content-between">
+                            <span class="text-muted">Uploaded On</span>
+                            <span>{{ document.uploaded_at.strftime('%d %b %Y') }}</span>
+                        </li>
+                    </ul>
+                    
+                    <div class="d-grid gap-2 mt-3">
+                        <a href="{{ url_for('view_document', document_id=document.id) }}" class="btn btn-outline-primary">
+                            <i class="far fa-eye me-2"></i> View Full Project
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block additional_js %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

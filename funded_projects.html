@@ -1,0 +1,241 @@
+{% extends "layout.html" %}
+{% block title %}Funded Projects - Collaborative Research Platform{% endblock %}
+{% block additional_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<!-- Mobile Navigation Toggle -->
+<div class="mobile-toggle d-lg-none">
+    <i class="fas fa-bars"></i>
+</div>
+<!-- Sidebar -->
+{% include 'partials/sidebar.html' %}
+<!-- Main Content -->
+<div class="main-content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">Funded Projects</h1>
+        <div class="d-flex align-items-center">
+            <span class="me-3 text-muted">{{ current_user.role|capitalize }}</span>
+            <a href="{{ url_for('profile') }}" class="text-decoration-none">
+                <img src="{{ url_for('static', filename='uploads/' + current_user.profile_image) if current_user.profile_image != 'default.jpg' else 'https://ui-avatars.com/api/?name=' + current_user.username + '&background=3FA796&color=fff' }}" 
+                     alt="{{ current_user.username }}" class="avatar avatar-md">
+            </a>
+        </div>
+    </div>
+    
+    <div class="dashboard-card">
+        <div class="dashboard-card-header">
+            <h5><i class="fas fa-donate me-2"></i> Your Funded Research Projects</h5>
+        </div>
+        <div class="dashboard-card-body">
+            {% if funded_documents %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Project</th>
+                            <th>Researcher</th>
+                            <th>Institution</th>
+                            <th>Funded Amount</th>
+                            <th>Funding Status</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for document, funding in funded_documents %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="document-icon me-2">
+                                        {% if document.file_type == 'pdf' %}
+                                        <i class="far fa-file-pdf"></i>
+                                        {% elif document.file_type in ['doc', 'docx'] %}
+                                        <i class="far fa-file-word"></i>
+                                        {% elif document.file_type in ['xls', 'xlsx'] %}
+                                        <i class="far fa-file-excel"></i>
+                                        {% elif document.file_type in ['ppt', 'pptx'] %}
+                                        <i class="far fa-file-powerpoint"></i>
+                                        {% else %}
+                                        <i class="far fa-file-alt"></i>
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold">{{ document.title|e }}</div>
+                                        <div class="small text-muted">{{ document.file_type.upper() }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div>{{ document.owner.username }}</div>
+                                <div class="small text-muted">{{ document.owner.role|capitalize }}</div>
+                            </td>
+                            <td>
+                                {% if document.owner.role == 'student' or document.owner.role == 'professor' %}
+                                {{ document.owner.college }}
+                                {% else %}
+                                {{ document.owner.company_name }}
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="fw-bold">${{ funding.amount|round|int }}</div>
+                            </td>
+                            <td>
+                                {% if funding.status == 'pending' %}
+                                <span class="badge bg-warning">Pending</span>
+                                {% elif funding.status == 'approved' %}
+                                <span class="badge bg-success">Approved</span>
+                                {% elif funding.status == 'rejected' %}
+                                <span class="badge bg-danger">Rejected</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div>{{ funding.created_at.strftime('%d %b %Y') }}</div>
+                                <div class="small text-muted">{{ funding.created_at.strftime('%H:%M') }}</div>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('view_document', document_id=document.id) }}" class="btn btn-outline-primary">
+                                        <i class="far fa-eye"></i>
+                                    </a>
+                                    <a href="{{ url_for('fund_project', document_id=document.id) }}" class="btn btn-outline-primary">
+                                        <i class="fas fa-donate"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-donate fa-3x mb-3 text-muted"></i>
+                <h5>No Funded Projects Yet</h5>
+                <p class="text-muted">You haven't funded any research projects yet.</p>
+                <a href="{{ url_for('dashboard') }}" class="btn btn-outline-primary mt-2">
+                    <i class="fas fa-search me-2"></i> Explore Funding Opportunities
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Funding Opportunities Section -->
+    <div class="dashboard-card mt-4">
+        <div class="dashboard-card-header">
+            <h5><i class="fas fa-search-dollar me-2"></i> More Funding Opportunities</h5>
+        </div>
+        <div class="dashboard-card-body">
+            <!-- Display list of projects eligible for funding -->
+            {% set funding_eligible_documents = Document.query.join(User).filter(Document.is_public == True).filter(Document.is_funding_enabled == True).filter(Document.user_id != current_user.id).filter(User.role.in_(['student', 'professor'])).order_by(Document.uploaded_at.desc()).limit(10).all() %}
+            
+            {% if funding_eligible_documents %}
+            <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
+                {% for document in funding_eligible_documents %}
+                <div class="col">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="document-icon me-3">
+                                    {% if document.file_type == 'pdf' %}
+                                    <i class="far fa-file-pdf"></i>
+                                    {% elif document.file_type in ['doc', 'docx'] %}
+                                    <i class="far fa-file-word"></i>
+                                    {% elif document.file_type in ['xls', 'xlsx'] %}
+                                    <i class="far fa-file-excel"></i>
+                                    {% elif document.file_type in ['ppt', 'pptx'] %}
+                                    <i class="far fa-file-powerpoint"></i>
+                                    {% else %}
+                                    <i class="far fa-file-alt"></i>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <h6 class="card-title mb-0">{{ document.title|e }}</h6>
+                                    <div class="small text-muted">{{ document.file_type.upper() }}</div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="small text-muted mb-1">Project Summary</div>
+                                <p class="card-text small">{{ document.description|e|truncate(100) }}</p>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="small text-muted mb-1">Researcher</div>
+                                <div class="d-flex align-items-center">
+                                    <img src="{{ url_for('static', filename='uploads/' + document.owner.profile_image) if document.owner.profile_image != 'default.jpg' else 'https://ui-avatars.com/api/?name=' + document.owner.username + '&background=3FA796&color=fff' }}" 
+                                         alt="{{ document.owner.username }}" class="avatar avatar-sm me-2">
+                                    <div>
+                                        <div class="small fw-bold">{{ document.owner.username }}</div>
+                                        <div class="small text-muted">{{ document.owner.role|capitalize }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="small text-muted mb-1">Funding Status</div>
+                                {% set received = document.funding_requests.filter_by(status='approved').with_entities(func.sum(Funding.amount)).scalar() or 0 %}
+                                {% set percentage = (received / document.funding_goal * 100) if document.funding_goal > 0 else 0 %}
+                                <div class="progress mb-2" style="height: 6px;">
+                                    <div class="progress-bar bg-success" role="progressbar" 
+                                         style="width: {{ percentage }}%;" 
+                                         aria-valuenow="{{ percentage }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                </div>
+                                <div class="d-flex justify-content-between small">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <strong>Project Description:</strong>
+                            <p>{{ data.document.description|e }}</p>
+                        </div>
+                        
+                        <h5 class="mt-4">Funding History</h5>
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Message</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for funding in data.fundings %}
+                                <tr>
+                                    <td>{{ funding.created_at.strftime('%Y-%m-%d') }}</td>
+                                    <td>${{ "%0.2f"|format(funding.amount) }}</td>
+                                    <td>
+                                        {% if funding.status == 'pending' %}
+                                            <span class="badge bg-warning">Pending</span>
+                                        {% elif funding.status == 'approved' %}
+                                            <span class="badge bg-success">Approved</span>
+                                        {% elif funding.status == 'rejected' %}
+                                            <span class="badge bg-danger">Rejected</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ funding.message|default('-')|e }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                        
+                        <div class="mt-3">
+                            <a href="{{ url_for('view_document', document_id=data.document.id) }}" class="btn btn-primary">View Project</a>
+                            <a href="{{ url_for('fund_project', document_id=data.document.id) }}" class="btn btn-success ms-2">Fund Again</a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="alert alert-info">
+                    <h4>No funded projects yet</h4>
+                    <p>You haven't funded any research projects yet. Browse available projects and start supporting research!</p>
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-primary">Browse Projects</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

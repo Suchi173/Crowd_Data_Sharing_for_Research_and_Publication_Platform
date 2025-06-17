@@ -1,0 +1,337 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ document.title|e }} - Collaborative Research Platform{% endblock %}
+
+{% block additional_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<style>
+    .document-preview {
+        min-height: 500px;
+        border: 1px solid var(--border-color);
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        background-color: var(--card-bg);
+    }
+    
+    .document-details {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    
+    .document-icon-large {
+        width: 60px;
+        height: 60px;
+        background-color: rgba(63, 167, 150, 0.1);
+        color: var(--primary-color);
+        border-radius: 0.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+        font-size: 2rem;
+    }
+    
+    .collaborator-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-top: 1rem;
+    }
+    
+    .collaborator-item {
+        display: flex;
+        align-items: center;
+        background-color: rgba(63, 167, 150, 0.1);
+        padding: 0.5rem 0.75rem;
+        border-radius: 1rem;
+    }
+    
+    .collaborator-avatar {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        margin-right: 0.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Mobile Navigation Toggle -->
+<div class="mobile-toggle d-lg-none">
+    <i class="fas fa-bars"></i>
+</div>
+
+<!-- Sidebar -->
+{% include 'partials/sidebar.html' %}
+
+<!-- Main Content -->
+<div class="main-content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="mb-0">{{ document.title|e }}</h1>
+            <p class="text-muted mb-0">Uploaded by {{ document.owner.username }} on {{ document.uploaded_at.strftime('%B %d, %Y') }}</p>
+        </div>
+        <div class="d-flex align-items-center">
+            <span class="me-3 text-muted">{{ current_user.role|capitalize }}</span>
+            <a href="{{ url_for('profile') }}" class="text-decoration-none">
+                <img src="{{ url_for('static', filename='uploads/' + current_user.profile_image) if current_user.profile_image != 'default.jpg' else 'https://ui-avatars.com/api/?name=' + current_user.username + '&background=3FA796&color=fff' }}" 
+                     alt="{{ current_user.username }}" class="avatar avatar-md">
+            </a>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Document Content -->
+        <div class="col-lg-8">
+            <div class="dashboard-card">
+                <div class="dashboard-card-header">
+                    <div class="document-details">
+                        <div class="document-icon-large">
+                            {% if document.file_type == 'pdf' %}
+                            <i class="far fa-file-pdf"></i>
+                            {% elif document.file_type in ['doc', 'docx'] %}
+                            <i class="far fa-file-word"></i>
+                            {% elif document.file_type in ['xls', 'xlsx'] %}
+                            <i class="far fa-file-excel"></i>
+                            {% elif document.file_type in ['ppt', 'pptx'] %}
+                            <i class="far fa-file-powerpoint"></i>
+                            {% else %}
+                            <i class="far fa-file-alt"></i>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <h2 class="mb-0">{{ document.title|e }}</h2>
+                            <div class="text-muted small">
+                                {{ document.file_type.upper() }} • {{ (document.file_size / 1024)|round(1) }} KB • Uploaded on {{ document.uploaded_at.strftime('%d %B %Y') }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="dropdown">
+                        <button class="btn btn-outline-primary dropdown-toggle" type="button" id="documentActions" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="documentActions">
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('download_document', document_id=document.id) }}">
+                                    <i class="fas fa-download me-2"></i> Download
+                                </a>
+                            </li>
+                            {% if document.user_id == current_user.id %}
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('edit_document', document_id=document.id) }}">
+                                    <i class="fas fa-edit me-2"></i> Edit
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('collaborate', document_id=document.id) }}">
+                                    <i class="fas fa-user-plus me-2"></i> Manage Collaborators
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item text-danger delete-document" href="#" data-document-id="{{ document.id }}" data-form-id="delete-form-{{ document.id }}">
+                                    <i class="fas fa-trash me-2"></i> Delete
+                                </a>
+                                <form id="delete-form-{{ document.id }}" action="{{ url_for('delete_document', document_id=document.id) }}" method="POST" style="display: none;"></form>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="dashboard-card-body">
+                    <h5 class="mb-3">Description</h5>
+                    <div class="mb-4">
+                        {% if document.description %}
+                        <p>{{ document.description|e }}</p>
+                        {% else %}
+                        <p class="text-muted">No description provided.</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="document-preview">
+                        {% if document.file_type == 'pdf' %}
+                        <div class="text-center">
+                            <embed src="{{ url_for('static', filename='uploads/documents/' + document.file_path) }}" type="application/pdf" width="100%" height="600px">
+                        </div>
+                        {% else %}
+                        <div class="text-center py-5">
+                            <div class="mb-4">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                    <polyline points="14 2 14 8 20 8"></polyline>
+                                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                                    <polyline points="10 9 9 9 8 9"></polyline>
+                                </svg>
+                            </div>
+                            <h5>{{ document.file_type.upper() }} Document</h5>
+                            <p class="text-muted">This file type cannot be previewed directly in the browser.</p>
+                            <a href="{{ url_for('download_document', document_id=document.id) }}" class="btn btn-outline-primary mt-2">
+                                <i class="fas fa-download me-2"></i> Download to View
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Document Sidebar -->
+        <div class="col-lg-4">
+            <!-- Owner Card -->
+            <div class="dashboard-card mb-4">
+                <div class="dashboard-card-header">
+                    <h5>Document Owner</h5>
+                </div>
+                <div class="dashboard-card-body">
+                    <div class="d-flex align-items-center">
+                        <img src="{{ url_for('static', filename='uploads/' + document.owner.profile_image) if document.owner.profile_image != 'default.jpg' else 'https://ui-avatars.com/api/?name=' + document.owner.username + '&background=3FA796&color=fff' }}" 
+                             alt="{{ document.owner.username }}" class="avatar avatar-lg me-3">
+                        <div>
+                            <h6 class="mb-1">{{ document.owner.username }}</h6>
+                            <p class="mb-0 text-muted">{{ document.owner.role|capitalize }}</p>
+                            <p class="mb-0 small text-muted">
+                                {% if document.owner.role == 'student' or document.owner.role == 'professor' %}
+                                {{ document.owner.college }}
+                                {% elif document.owner.role == 'company' %}
+                                {{ document.owner.company_name }}
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Collaborators Card -->
+            <div class="dashboard-card mb-4">
+                <div class="dashboard-card-header">
+                    <h5>Collaborators</h5>
+                    {% if document.user_id == current_user.id %}
+                    <a href="{{ url_for('collaborate', document_id=document.id) }}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-user-plus me-1"></i> Manage
+                    </a>
+                    {% endif %}
+                </div>
+                <div class="dashboard-card-body">
+                    {% if collaborators %}
+                    <div class="collaborator-list">
+                        {% for collaborator in collaborators %}
+                        <div class="collaborator-item">
+                            <img src="{{ url_for('static', filename='uploads/' + collaborator.profile_image) if collaborator.profile_image != 'default.jpg' else 'https://ui-avatars.com/api/?name=' + collaborator.username + '&background=3FA796&color=fff&size=24' }}" 
+                                 alt="{{ collaborator.username }}" class="collaborator-avatar">
+                            <span>{{ collaborator.username }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-users fa-2x text-muted mb-2"></i>
+                        <p class="mb-0">No collaborators yet</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Document Details Card -->
+            <div class="dashboard-card mb-4">
+                <div class="dashboard-card-header">
+                    <h5>Document Details</h5>
+                </div>
+                <div class="dashboard-card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item px-0 d-flex justify-content-between">
+                            <span class="text-muted">Created</span>
+                            <span>{{ document.uploaded_at.strftime('%d %B %Y') }}</span>
+                        </li>
+                        <li class="list-group-item px-0 d-flex justify-content-between">
+                            <span class="text-muted">Last Modified</span>
+                            <span>{{ document.last_modified.strftime('%d %B %Y') }}</span>
+                        </li>
+                        <li class="list-group-item px-0 d-flex justify-content-between">
+                            <span class="text-muted">File Type</span>
+                            <span>{{ document.file_type.upper() }}</span>
+                        </li>
+                        <li class="list-group-item px-0 d-flex justify-content-between">
+                            <span class="text-muted">File Size</span>
+                            <span>{{ (document.file_size / 1024)|round(1) }} KB</span>
+                        </li>
+                        <li class="list-group-item px-0 d-flex justify-content-between">
+                            <span class="text-muted">Visibility</span>
+                            <span>
+                                {% if document.is_public %}
+                                <span class="badge bg-success">Public</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Private</span>
+                                {% endif %}
+                            </span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            {% if document.is_funding_enabled and document.owner.role in ['student', 'professor'] %}
+            <!-- Project Funding Card -->
+            <div class="dashboard-card">
+                <div class="dashboard-card-header">
+                    <h5>Project Funding</h5>
+                </div>
+                <div class="dashboard-card-body">
+                    <div class="mb-3">
+                        <h6>Funding Goal</h6>
+                        <h4>${{ "%0.2f"|format(document.funding_goal) if document.funding_goal else "0.00" }}</h4>
+                    </div>
+                    
+                    {% set fundings = document.funding_requests.all() %}
+                    {% set total_funded = fundings|map(attribute='amount')|sum %}
+                    {% set funding_progress = (total_funded / document.funding_goal * 100) if document.funding_goal and total_funded else 0 %}
+                    
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span>Progress</span>
+                            <span class="text-primary">{{ "%0.1f"|format(funding_progress) }}%</span>
+                        </div>
+                        <div class="progress" style="height: 10px;">
+                            <div class="progress-bar bg-primary" role="progressbar" style="width: {{ funding_progress }}%;" 
+                                 aria-valuenow="{{ funding_progress }}" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-1">
+                            <span class="small">${{ "%0.2f"|format(total_funded) }}</span>
+                            <span class="small">${{ "%0.2f"|format(document.funding_goal) if document.funding_goal else "0.00" }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span>Total Backers</span>
+                            <span class="badge bg-primary">{{ fundings|length }}</span>
+                        </div>
+                        
+                        {% if current_user.role == 'company' %}
+                        <div class="d-grid gap-2">
+                            <a href="{{ url_for('fund_project', document_id=document.id) }}" class="btn btn-primary">
+                                <i class="fas fa-donate me-2"></i> Fund this Project
+                            </a>
+                        </div>
+                        {% elif current_user.id == document.user_id %}
+                        <div class="d-grid gap-2">
+                            <a href="{{ url_for('my_project_funding') }}" class="btn btn-outline-primary">
+                                <i class="fas fa-chart-line me-2"></i> View Funding Details
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block additional_js %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

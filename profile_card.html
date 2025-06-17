@@ -1,0 +1,42 @@
+<div class="profile-card">
+    <img src="{{ url_for('static', filename='uploads/' + current_user.profile_image) if current_user.profile_image != 'default.jpg' else 'https://ui-avatars.com/api/?name=' + current_user.username + '&background=3FA796&color=fff' }}" 
+         alt="{{ current_user.username }}" class="profile-avatar">
+    <div class="profile-info">
+        <h4 class="profile-name">{{ current_user.username }}</h4>
+        <p class="profile-role">{{ current_user.email }}</p>
+        
+        {% if current_user.role == 'student' %}
+        <p class="text-muted mb-0">Student at {{ current_user.college }}</p>
+        {% elif current_user.role == 'professor' %}
+        <p class="text-muted mb-0">Professor at {{ current_user.college }}</p>
+        <p class="text-muted mb-0">Field: {{ current_user.field }}</p>
+        {% elif current_user.role == 'company' %}
+        <p class="text-muted mb-0">{{ current_user.company_name }}</p>
+        {% endif %}
+        
+        <div class="mt-3">
+            <a href="{{ url_for('profile') }}" class="btn btn-sm btn-outline-primary">
+                <i class="fas fa-user-edit me-1"></i> Edit Profile
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="border-top mt-3 pt-3">
+    <div class="profile-stats">
+        <div class="profile-stat">
+            <div class="profile-stat-value">{{ current_user.documents.count() }}</div>
+            <div class="profile-stat-label">Documents</div>
+        </div>
+        
+        <div class="profile-stat">
+            <div class="profile-stat-value">{{ current_user.collaborations.count() }}</div>
+            <div class="profile-stat-label">Collaborations</div>
+        </div>
+        
+        <div class="profile-stat">
+            <div class="profile-stat-value">{{ current_user.notifications.filter_by(is_read=False).count() }}</div>
+            <div class="profile-stat-label">Notifications</div>
+        </div>
+    </div>
+</div>

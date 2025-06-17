@@ -1,0 +1,158 @@
+{% extends "layout.html" %}
+
+{% block title %}Register as {{ role|capitalize }} - Collaborative Research Platform{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="auth-header text-center">
+        <h1 class="auth-title">Register for ResearchCollab</h1>
+    </div>
+    
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card auth-card shadow">
+                <div class="row g-0">
+                    <div class="col-lg-4">
+                        <div class="auth-header bg-gradient-primary h-100 d-flex flex-column justify-content-center">
+                            <h3 class="mb-4">Welcome to ResearchCollab</h3>
+                            <p>Join our platform as a {{ role }} to collaborate and publish research</p>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-8">
+                        <div class="auth-body">
+                            <h4 class="mb-4">{{ role|capitalize }} Registration</h4>
+                            
+                            <form method="POST" action="{{ url_for('register', role=role) }}">
+                                {{ form.hidden_tag() }}
+                                
+                                <div class="mb-3">
+                                    <label for="username" class="form-label">Username</label>
+                                    {{ form.username(class="form-control", placeholder="Choose a username") }}
+                                    {% if form.username.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {% for error in form.username.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="email" class="form-label">Email Address</label>
+                                    {{ form.email(class="form-control", placeholder="Enter your email") }}
+                                    {% if form.email.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {% for error in form.email.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                {% if role == 'student' or role == 'professor' %}
+                                <div class="mb-3">
+                                    <label for="college" class="form-label">College/University</label>
+                                    {{ form.college(class="form-control", placeholder="Enter your institution") }}
+                                    {% if form.college.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {% for error in form.college.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                                
+                                {% if role == 'professor' %}
+                                <div class="mb-3">
+                                    <label for="field" class="form-label">Field of Expertise</label>
+                                    {{ form.field(class="form-control", placeholder="Enter your field of expertise") }}
+                                    {% if form.field.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {% for error in form.field.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                                
+                                {% if role == 'company' %}
+                                <div class="mb-3">
+                                    <label for="company_name" class="form-label">Company Name</label>
+                                    {{ form.company_name(class="form-control", placeholder="Enter your company name") }}
+                                    {% if form.company_name.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {% for error in form.company_name.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                                
+                                {% if role == 'student' or role == 'professor' %}
+                                <div class="mb-3">
+                                    <label for="date_of_birth" class="form-label">Date of Birth</label>
+                                    {{ form.date_of_birth(class="form-control", type="date") }}
+                                    {% if form.date_of_birth.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {% for error in form.date_of_birth.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                                
+                                <div class="mb-3">
+                                    <label for="password" class="form-label">Password</label>
+                                    <div class="input-group">
+                                        {{ form.password(class="form-control", placeholder="Create a password") }}
+                                        <button class="btn btn-outline-secondary password-toggle" type="button" data-target="password">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                    {% if form.password.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {% for error in form.password.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <label for="confirm_password" class="form-label">Confirm Password</label>
+                                    <div class="input-group">
+                                        {{ form.confirm_password(class="form-control", placeholder="Confirm your password") }}
+                                        <button class="btn btn-outline-secondary password-toggle" type="button" data-target="confirm_password">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                    {% if form.confirm_password.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {% for error in form.confirm_password.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="d-grid gap-2 mb-3">
+                                    {{ form.submit(class="btn btn-primary btn-lg") }}
+                                </div>
+                            </form>
+                        </div>
+                        
+                        <div class="card-footer text-center py-3">
+                            <p class="mb-0">Already have an account? <a href="{{ url_for('login') }}" class="text-decoration-none"><strong>Login Here</strong></a></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

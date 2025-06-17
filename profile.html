@@ -1,0 +1,245 @@
+{% extends "layout.html" %}
+
+{% block title %}Profile - Collaborative Research Platform{% endblock %}
+
+{% block additional_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<!-- Mobile Navigation Toggle -->
+<div class="mobile-toggle d-lg-none">
+    <i class="fas fa-bars"></i>
+</div>
+
+<!-- Sidebar -->
+{% include 'partials/sidebar.html' %}
+
+<!-- Main Content -->
+<div class="main-content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">User Profile</h1>
+        <div class="d-flex align-items-center">
+            <span class="me-3 text-muted">{{ current_user.role|capitalize }}</span>
+            <img src="{{ url_for('static', filename='uploads/' + current_user.profile_image) if current_user.profile_image != 'default.jpg' else 'https://ui-avatars.com/api/?name=' + current_user.username + '&background=3FA796&color=fff' }}" 
+                 alt="{{ current_user.username }}" class="avatar avatar-md">
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Profile Information -->
+        <div class="col-lg-4 mb-4">
+            <div class="dashboard-card">
+                <div class="dashboard-card-header">
+                    <h5>Profile Information</h5>
+                </div>
+                <div class="dashboard-card-body">
+                    <div class="text-center mb-4">
+                        <img src="{{ url_for('static', filename='uploads/' + current_user.profile_image) if current_user.profile_image != 'default.jpg' else 'https://ui-avatars.com/api/?name=' + current_user.username + '&background=3FA796&color=fff&size=200' }}" 
+                             alt="{{ current_user.username }}" class="img-fluid rounded-circle mb-3" style="width: 150px; height: 150px; object-fit: cover;">
+                        <h4>{{ current_user.username }}</h4>
+                        <p class="text-muted">{{ current_user.role|capitalize }}</p>
+                    </div>
+                    
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item px-0 d-flex justify-content-between">
+                            <span class="text-muted">Email</span>
+                            <span>{{ current_user.email }}</span>
+                        </li>
+                        {% if current_user.role == 'student' or current_user.role == 'professor' %}
+                        <li class="list-group-item px-0 d-flex justify-content-between">
+                            <span class="text-muted">College/University</span>
+                            <span>{{ current_user.college or 'Not specified' }}</span>
+                        </li>
+                        {% endif %}
+                        {% if current_user.role == 'professor' %}
+                        <li class="list-group-item px-0 d-flex justify-content-between">
+                            <span class="text-muted">Field of Expertise</span>
+                            <span>{{ current_user.field or 'Not specified' }}</span>
+                        </li>
+                        {% endif %}
+                        {% if current_user.role == 'company' %}
+                        <li class="list-group-item px-0 d-flex justify-content-between">
+                            <span class="text-muted">Company Name</span>
+                            <span>{{ current_user.company_name or 'Not specified' }}</span>
+                        </li>
+                        {% endif %}
+                        {% if current_user.role == 'student' or current_user.role == 'professor' %}
+                        <li class="list-group-item px-0 d-flex justify-content-between">
+                            <span class="text-muted">Date of Birth</span>
+                            <span>{{ current_user.date_of_birth.strftime('%d %B %Y') if current_user.date_of_birth else 'Not specified' }}</span>
+                        </li>
+                        {% endif %}
+                        <li class="list-group-item px-0 d-flex justify-content-between">
+                            <span class="text-muted">Joined On</span>
+                            <span>{{ current_user.created_at.strftime('%d %B %Y') }}</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Edit Profile -->
+        <div class="col-lg-8 mb-4">
+            <div class="dashboard-card">
+                <div class="dashboard-card-header">
+                    <h5>Edit Profile</h5>
+                </div>
+                <div class="dashboard-card-body">
+                    <form method="POST" action="{{ url_for('profile') }}" enctype="multipart/form-data">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Username</label>
+                            {{ form.username(class="form-control") }}
+                            {% if form.username.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in form.username.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email Address</label>
+                            {{ form.email(class="form-control") }}
+                            {% if form.email.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in form.email.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        {% if current_user.role == 'student' or current_user.role == 'professor' %}
+                        <div class="mb-3">
+                            <label for="college" class="form-label">College/University</label>
+                            {{ form.college(class="form-control") }}
+                            {% if form.college.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in form.college.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                        
+                        {% if current_user.role == 'professor' %}
+                        <div class="mb-3">
+                            <label for="field" class="form-label">Field of Expertise</label>
+                            {{ form.field(class="form-control") }}
+                            {% if form.field.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in form.field.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                        
+                        {% if current_user.role == 'company' %}
+                        <div class="mb-3">
+                            <label for="company_name" class="form-label">Company Name</label>
+                            {{ form.company_name(class="form-control") }}
+                            {% if form.company_name.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in form.company_name.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                        
+                        <div class="mb-4">
+                            <label for="profile_image" class="form-label">Profile Picture</label>
+                            <div class="input-group">
+                                {{ form.profile_image(class="form-control") }}
+                            </div>
+                            <small class="text-muted">Upload a new profile picture (JPG, JPEG, PNG only)</small>
+                            {% if form.profile_image.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in form.profile_image.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            {{ form.submit(class="btn btn-primary") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Recent Documents -->
+            <div class="dashboard-card mt-4">
+                <div class="dashboard-card-header">
+                    <h5>Recent Documents</h5>
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="dashboard-card-body">
+                    {% if documents %}
+                    <ul class="document-list">
+                        {% for document in documents %}
+                        <li class="document-item">
+                            <div class="document-icon">
+                                {% if document.file_type in ['pdf'] %}
+                                <i class="far fa-file-pdf"></i>
+                                {% elif document.file_type in ['doc', 'docx'] %}
+                                <i class="far fa-file-word"></i>
+                                {% elif document.file_type in ['xls', 'xlsx'] %}
+                                <i class="far fa-file-excel"></i>
+                                {% elif document.file_type in ['ppt', 'pptx'] %}
+                                <i class="far fa-file-powerpoint"></i>
+                                {% else %}
+                                <i class="far fa-file-alt"></i>
+                                {% endif %}
+                            </div>
+                            <div class="document-info">
+                                <h6 class="document-title">{{ document.title }}</h6>
+                                <div class="document-meta">
+                                    <span>{{ document.file_type.upper() }}</span> • 
+                                    <span>{{ (document.file_size / 1024)|round(1) }} KB</span> • 
+                                    <span>{{ document.uploaded_at.strftime('%d %b %Y') }}</span>
+                                </div>
+                            </div>
+                            <div class="document-actions">
+                                <a href="{{ url_for('view_document', document_id=document.id) }}" class="document-action" data-bs-toggle="tooltip" title="View">
+                                    <i class="far fa-eye"></i>
+                                </a>
+                                <a href="{{ url_for('download_document', document_id=document.id) }}" class="document-action" data-bs-toggle="tooltip" title="Download">
+                                    <i class="fas fa-download"></i>
+                                </a>
+                                <a href="{{ url_for('edit_document', document_id=document.id) }}" class="document-action" data-bs-toggle="tooltip" title="Edit">
+                                    <i class="far fa-edit"></i>
+                                </a>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="far fa-file-alt fa-3x text-muted mb-3"></i>
+                        <h5>No Documents Yet</h5>
+                        <p class="text-muted">You haven't uploaded any documents yet.</p>
+                        <a href="{{ url_for('upload_document') }}" class="btn btn-outline-primary mt-2">
+                            <i class="fas fa-upload me-2"></i> Upload a Document
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block additional_js %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

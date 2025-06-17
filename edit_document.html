@@ -1,0 +1,217 @@
+{% extends "layout.html" %}
+
+{% block title %}Edit Document - {{ document.title|e }} - Collaborative Research Platform{% endblock %}
+{% block additional_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<!-- Mobile Navigation Toggle -->
+<div class="mobile-toggle d-lg-none">
+    <i class="fas fa-bars"></i>
+</div>
+
+<!-- Sidebar -->
+{% include 'partials/sidebar.html' %}
+
+<!-- Main Content -->
+<div class="main-content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <a href="{{ url_for('view_document', document_id=document.id) }}" class="text-decoration-none mb-2 d-inline-block">
+                <i class="fas fa-arrow-left me-2"></i> Back to Document
+            </a>
+            <h1 class="mb-0">Edit Document</h1>
+        </div>
+        <div class="d-flex align-items-center">
+            <span class="me-3 text-muted">{{ current_user.role|capitalize }}</span>
+            <a href="{{ url_for('profile') }}" class="text-decoration-none">
+                <img src="{{ url_for('static', filename='uploads/' + current_user.profile_image) if current_user.profile_image != 'default.jpg' else 'https://ui-avatars.com/api/?name=' + current_user.username + '&background=3FA796&color=fff' }}" 
+                     alt="{{ current_user.username }}" class="avatar avatar-md">
+            </a>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="dashboard-card">
+                <div class="dashboard-card-header">
+                    <h5>Edit Document Details</h5>
+                </div>
+                <div class="dashboard-card-body">
+                    <form method="POST" action="{{ url_for('edit_document', document_id=document.id) }}">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Document Title</label>
+                            {{ form.title(class="form-control text-white") }}
+                            {% if form.title.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in form.title.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Document Description</label>
+                            {{ form.description(class="form-control text-white", rows="6") }}
+                            {% if form.description.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in form.description.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-4 form-check">
+                            {{ form.is_public(class="form-check-input") }}
+                            <label class="form-check-label" for="is_public">
+                                Make this document public
+                            </label>
+                            <div class="text-muted small">
+                                Public documents can be viewed by all users on the platform.
+                            </div>
+                        </div>
+                        
+                        {% if current_user.role in ['student', 'professor'] %}
+                        <div class="mb-4">
+                            <h5>Funding Options</h5>
+                            <div class="card card-body bg-light">
+                                <div class="form-check mb-3">
+                                    {{ form.is_funding_enabled(class="form-check-input") }}
+                                    <label class="form-check-label" for="is_funding_enabled">
+                                        Enable funding for this project
+                                    </label>
+                                    <div class="text-muted small">
+                                        Allow companies to provide funding for your research project.
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3" id="fundingGoalContainer">
+                                    <label for="funding_goal" class="form-label">Funding Goal (USD)</label>
+                                    {{ form.funding_goal(class="form-control text-white", placeholder="Enter your funding goal") }}
+                                    {% if form.funding_goal.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {% for error in form.funding_goal.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <div class="text-muted small mt-1">
+                                        Set a funding goal for your research project. Companies will be able to contribute to your goal.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('view_document', document_id=document.id) }}" class="btn btn-outline-secondary">
+                                Cancel
+                            </a>
+                            {{ form.submit(class="btn btn-primary") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <!-- Document Info -->
+            <div class="dashboard-card mb-4">
+                <div class="dashboard-card-header">
+                    <h5>Current Document</h5>
+                </div>
+                <div class="dashboard-card-body">
+                    <div class="text-center mb-4">
+                        <div class="document-icon-large mx-auto" style="width: 80px; height: 80px; font-size: 2.5rem;">
+                            {% if document.file_type == 'pdf' %}
+                            <i class="far fa-file-pdf"></i>
+                            {% elif document.file_type in ['doc', 'docx'] %}
+                            <i class="far fa-file-word"></i>
+                            {% elif document.file_type in ['xls', 'xlsx'] %}
+                            <i class="far fa-file-excel"></i>
+                            {% elif document.file_type in ['ppt', 'pptx'] %}
+                            <i class="far fa-file-powerpoint"></i>
+                            {% else %}
+                            <i class="far fa-file-alt"></i>
+                            {% endif %}
+                        </div>
+                        <h6 class="mb-0 mt-2">{{ document.title|e }}</h6>
+                        <div class="text-muted small">{{ document.file_type.upper() }}</div>
+                    </div>
+                    
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item px-0 d-flex justify-content-between">
+                            <span class="text-muted">File Size</span>
+                            <span>{{ (document.file_size / 1024)|round(1) }} KB</span>
+                        </li>
+                        <li class="list-group-item px-0 d-flex justify-content-between">
+                            <span class="text-muted">Uploaded On</span>
+                            <span>{{ document.uploaded_at.strftime('%d %B %Y') }}</span>
+                        </li>
+                        <li class="list-group-item px-0 d-flex justify-content-between">
+                            <span class="text-muted">Last Modified</span>
+                            <span>{{ document.last_modified.strftime('%d %B %Y') }}</span>
+                        </li>
+                        <li class="list-group-item px-0 d-flex justify-content-between">
+                            <span class="text-muted">Current Visibility</span>
+                            <span class="badge {{ 'bg-success' if document.is_public else 'bg-secondary' }}">
+                                {{ 'Public' if document.is_public else 'Private' }}
+                            </span>
+                        </li>
+                        <li class="list-group-item px-0 d-flex justify-content-between">
+                            <span class="text-muted">Collaborators</span>
+                            <span>{{ document.collaborations.count() }}</span>
+                        </li>
+                    </ul>
+                    
+                    <div class="d-grid gap-2 mt-3">
+                        <a href="{{ url_for('download_document', document_id=document.id) }}" class="btn btn-outline-primary">
+                            <i class="fas fa-download me-2"></i> Download Document
+                        </a>
+                        <a href="{{ url_for('collaborate', document_id=document.id) }}" class="btn btn-outline-primary">
+                            <i class="fas fa-users me-2"></i> Manage Collaborators
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Note Card -->
+            <div class="dashboard-card">
+                <div class="dashboard-card-header">
+                    <h5>Note</h5>
+                </div>
+                <div class="dashboard-card-body">
+                    <div class="alert alert-info mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <span>You can only edit the document metadata here. To replace the file, you'll need to upload a new document.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block additional_js %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const fundingEnabledCheckbox = document.getElementById('is_funding_enabled');
+        const fundingGoalContainer = document.getElementById('fundingGoalContainer');
+        
+        if (fundingEnabledCheckbox && fundingGoalContainer) {
+            // Initial state
+            fundingGoalContainer.style.display = fundingEnabledCheckbox.checked ? 'block' : 'none';
+            
+            // Add event listener
+            fundingEnabledCheckbox.addEventListener('change', function() {
+                fundingGoalContainer.style.display = this.checked ? 'block' : 'none';
+            });
+        }
+    });
+</script>
+{% endblock %}

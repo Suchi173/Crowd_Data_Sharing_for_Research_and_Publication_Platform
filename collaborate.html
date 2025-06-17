@@ -1,0 +1,260 @@
+{% extends "layout.html" %}
+
+{% block title %}Manage Collaborators - {{ document.title|e }} - Collaborative Research Platform{% endblock %}
+
+{% block additional_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<style>
+    .collaborator-list {
+        margin-top: 2rem;
+    }
+    
+    .collaborator-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .collaborator-info {
+        display: flex;
+        align-items: center;
+    }
+    
+    .collaborator-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        margin-right: 1rem;
+    }
+    
+    .collaborator-name {
+        font-weight: 500;
+        margin-bottom: 0.25rem;
+    }
+    
+    .collaborator-role {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+    }
+    
+    .permission-badge {
+        padding: 0.25rem 0.5rem;
+        border-radius: 1rem;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        margin-right: 1rem;
+    }
+    
+    .permission-view {
+        background-color: rgba(23, 162, 184, 0.1);
+        color: #17a2b8;
+    }
+    
+    .permission-edit {
+        background-color: rgba(40, 167, 69, 0.1);
+        color: #28a745;
+    }
+    
+    .permission-comment {
+        background-color: rgba(255, 193, 7, 0.1);
+        color: #ffc107;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Mobile Navigation Toggle -->
+<div class="mobile-toggle d-lg-none">
+    <i class="fas fa-bars"></i>
+</div>
+
+<!-- Sidebar -->
+{% include 'partials/sidebar.html' %}
+
+<!-- Main Content -->
+<div class="main-content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <a href="{{ url_for('view_document', document_id=document.id) }}" class="text-decoration-none mb-2 d-inline-block">
+                <i class="fas fa-arrow-left me-2"></i> Back to Document
+            </a>
+            <h1 class="mb-0">Manage Collaborators</h1>
+            <p class="text-muted">{{ document.title|e }}</p>
+        </div>
+        <div class="d-flex align-items-center">
+            <span class="me-3 text-muted">{{ current_user.role|capitalize }}</span>
+            <a href="{{ url_for('profile') }}" class="text-decoration-none">
+                <img src="{{ url_for('static', filename='uploads/' + current_user.profile_image) if current_user.profile_image != 'default.jpg' else 'https://ui-avatars.com/api/?name=' + current_user.username + '&background=3FA796&color=fff' }}" 
+                     alt="{{ current_user.username }}" class="avatar avatar-md">
+            </a>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Add Collaborator -->
+            <div class="dashboard-card mb-4">
+                <div class="dashboard-card-header">
+                    <h5>Add a Collaborator</h5>
+                </div>
+                <div class="dashboard-card-body">
+                    <form method="POST" action="{{ url_for('collaborate', document_id=document.id) }}">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="collaborator_email" class="form-label">Collaborator Email</label>
+                                {{ form.collaborator_email(class="form-control", placeholder="Enter email address") }}
+                                {% if form.collaborator_email.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {% for error in form.collaborator_email.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <label for="permission" class="form-label">Permission Level</label>
+                                {{ form.permission(class="form-select") }}
+                            </div>
+                            
+                            <div class="col-md-2 d-flex align-items-end">
+                                {{ form.submit(class="btn btn-primary w-100") }}
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3 text-muted small">
+                            <p class="mb-1"><strong>Permission levels:</strong></p>
+                            <ul class="mb-0">
+                                <li><strong>View Only:</strong> Can only view the document</li>
+                                <li><strong>Comment:</strong> Can view and add comments to the document</li>
+                                <li><strong>Edit:</strong> Can view, comment, and make changes to the document</li>
+                            </ul>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Current Collaborators -->
+            <div class="dashboard-card">
+                <div class="dashboard-card-header">
+                    <h5>Current Collaborators</h5>
+                </div>
+                <div class="dashboard-card-body">
+                    {% if collaborators %}
+                    <div class="collaborator-list">
+                        {% for collab, user in collaborators %}
+                        <div class="collaborator-item">
+                            <div class="collaborator-info">
+                                <img src="{{ url_for('static', filename='uploads/' + user.profile_image) if user.profile_image != 'default.jpg' else 'https://ui-avatars.com/api/?name=' + user.username + '&background=3FA796&color=fff' }}" 
+                                     alt="{{ user.username }}" class="collaborator-avatar">
+                                <div>
+                                    <h6 class="collaborator-name">{{ user.username }}</h6>
+                                    <div class="collaborator-role">{{ user.role|capitalize }} • {{ user.email }}</div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex align-items-center">
+                                <span class="permission-badge permission-{{ collab.permission }}">
+                                    {{ collab.permission|capitalize }}
+                                </span>
+                                
+                                <form action="{{ url_for('remove_collaborator', document_id=document.id, user_id=user.id) }}" method="POST">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to remove this collaborator from this document?')">
+                                        <i class="fas fa-user-minus"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-users fa-3x mb-3 text-muted"></i>
+                        <h5>No Collaborators Yet</h5>
+                        <p class="text-muted">Add collaborators using the form above to allow others to access this document.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <!-- Document Info -->
+            <div class="dashboard-card mb-4">
+                <div class="dashboard-card-header">
+                    <h5>Document Information</h5>
+                </div>
+                <div class="dashboard-card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="document-icon me-3">
+                            {% if document.file_type == 'pdf' %}
+                            <i class="far fa-file-pdf"></i>
+                            {% elif document.file_type in ['doc', 'docx'] %}
+                            <i class="far fa-file-word"></i>
+                            {% elif document.file_type in ['xls', 'xlsx'] %}
+                            <i class="far fa-file-excel"></i>
+                            {% elif document.file_type in ['ppt', 'pptx'] %}
+                            <i class="far fa-file-powerpoint"></i>
+                            {% else %}
+                            <i class="far fa-file-alt"></i>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <h6 class="mb-0">{{ document.title|e }}</h6>
+                            <div class="text-muted small">{{ document.file_type.upper() }} • {{ (document.file_size / 1024)|round(1) }} KB</div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {% if document.description %}
+                        <p class="mb-0">{{ document.description|e }}</p>
+                        {% else %}
+                        <p class="text-muted mb-0"><em>No description provided</em></p>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted">Visibility:</span>
+                        <span class="badge {{ 'bg-success' if document.is_public else 'bg-secondary' }}">
+                            {{ 'Public' if document.is_public else 'Private' }}
+                        </span>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted">Created:</span>
+                        <span>{{ document.uploaded_at.strftime('%d %b %Y') }}</span>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="text-muted">Last Modified:</span>
+                        <span>{{ document.last_modified.strftime('%d %b %Y') }}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tips Card -->
+            <div class="dashboard-card">
+                <div class="dashboard-card-header">
+                    <h5>Collaboration Tips</h5>
+                </div>
+                <div class="dashboard-card-body">
+                    <ul class="mb-0">
+                        <li class="mb-2">Use the <strong>Edit</strong> permission sparingly for trusted collaborators.</li>
+                        <li class="mb-2">The <strong>Comment</strong> permission is ideal for feedback without allowing changes.</li>
+                        <li class="mb-2">You can change a collaborator's permission level by removing and re-adding them.</li>
+                        <li class="mb-2">Set documents to <strong>Public</strong> to allow anyone to view them without specific sharing.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block additional_js %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

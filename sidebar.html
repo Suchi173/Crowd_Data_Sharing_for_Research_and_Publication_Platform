@@ -1,0 +1,115 @@
+<div class="sidebar">
+    <div class="sidebar-brand">
+        <i class="fas fa-book-reader"></i>
+        <span>ResearchCollab</span>
+    </div>
+    
+    <div class="theme-toggle">
+        <button id="themeToggle" class="theme-toggle-btn">
+            <i class="fas fa-sun light-icon"></i>
+            <i class="fas fa-moon dark-icon"></i>
+        </button>
+    </div>
+    
+    <ul class="sidebar-menu">
+        <li class="sidebar-item">
+            <a href="{{ url_for('dashboard') }}" class="sidebar-link {{ 'active' if request.endpoint == 'dashboard' else '' }}">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Dashboard</span>
+                <div class="sidebar-tooltip">Dashboard</div>
+            </a>
+        </li>
+        
+        <li class="sidebar-item">
+            <a href="{{ url_for('upload_document') }}" class="sidebar-link {{ 'active' if request.endpoint == 'upload_document' else '' }}">
+                <i class="fas fa-upload"></i>
+                <span>Upload</span>
+                <div class="sidebar-tooltip">Upload</div>
+            </a>
+        </li>
+        
+        <li class="sidebar-item">
+            <a href="#" class="sidebar-link">
+                <i class="fas fa-file-alt"></i>
+                <span>My Documents</span>
+                <div class="sidebar-tooltip">My Documents</div>
+            </a>
+        </li>
+        
+        <li class="sidebar-item">
+            <a href="#" class="sidebar-link">
+                <i class="fas fa-layer-group"></i>
+                <span>Collections</span>
+                <div class="sidebar-tooltip">Collections</div>
+            </a>
+        </li>
+        
+        <li class="sidebar-item">
+            <a href="#" class="sidebar-link">
+                <i class="fas fa-users"></i>
+                <span>Shared</span>
+                <div class="sidebar-tooltip">Shared</div>
+            </a>
+        </li>
+        {% if current_user.role == 'company' %}
+        <li class="sidebar-item">
+            <a href="{{ url_for('funded_projects') }}" class="sidebar-link {{ 'active' if request.endpoint == 'funded_projects' else '' }}">
+                <i class="fas fa-donate"></i>
+                <span>Funded Projects</span>
+                <div class="sidebar-tooltip">Funded Projects</div>
+            </a>
+        </li>
+        {% endif %}
+        
+        {% if current_user.role in ['student', 'professor'] %}
+        <li class="sidebar-item">
+            <a href="{{ url_for('my_project_funding') }}" class="sidebar-link {{ 'active' if request.endpoint == 'my_project_funding' else '' }}">
+                <i class="fas fa-chart-line"></i>
+                <span>Project Funding</span>
+                <div class="sidebar-tooltip">Project Funding</div>
+            </a>
+        </li>
+        {% endif %}
+        
+        <div class="sidebar-divider"></div>
+        <div class="sidebar-heading">Personal</div>
+        
+        <li class="sidebar-item">
+            <a href="{{ url_for('profile') }}" class="sidebar-link {{ 'active' if request.endpoint == 'profile' else '' }}">
+                <i class="fas fa-user"></i>
+                <span>Profile</span>
+                <div class="sidebar-tooltip">Profile</div>
+            </a>
+        </li>
+        
+        <li class="sidebar-item">
+            <a href="{{ url_for('notifications') }}" class="sidebar-link {{ 'active' if request.endpoint == 'notifications' else '' }}">
+                <i class="fas fa-bell"></i>
+                <span>Notifications</span>
+                <div class="sidebar-tooltip">Notifications</div>
+                {% set unread_count = current_user.notifications.filter_by(is_read=False).count() %}
+                {% if unread_count > 0 %}
+                <span class="notification-badge">{{ unread_count if unread_count < 10 else '9+' }}</span>
+                {% endif %}
+            </a>
+        </li>
+        
+        <li class="sidebar-item">
+            <a href="#" class="sidebar-link">
+                <i class="fas fa-cog"></i>
+                <span>Settings</span>
+                <div class="sidebar-tooltip">Settings</div>
+            </a>
+        </li>
+        
+        <div class="sidebar-divider"></div>
+        
+        <li class="sidebar-item">
+            <a href="{{ url_for('logout') }}" class="sidebar-link">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+                <div class="sidebar-tooltip">Logout</div>
+            </a>
+        </li>
+    </ul>
+</div>
